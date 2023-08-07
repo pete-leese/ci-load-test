@@ -1,0 +1,12 @@
+# name: Plan-On-PR-To-Main
+# # Only 1 env, so set a concurrency limit
+# on:
+#  pull_request:
+#    branches:
+#      - main
+#    types:
+#      - "edited"
+#      - "opened"
+#      - "ready_for_review"
+#      - "reopened"
+#      - "synchronize"

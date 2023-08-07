@@ -1,0 +1,53 @@
+---
+commitizen:
+  customize:
+    bump_map:
+      Break: MAJOR
+      Feature: MINOR
+      Fix: PATCH
+      break: MAJOR
+      feature: MINOR
+      fix: PATCH
+    bump_pattern: ^((B|b)reak|(F|f)eature|(F|f)ix)
+    change_type_map:
+      Break: Breaking Change
+      Feature: Feature
+      Fix: Fix
+      break: Breaking Change
+      feature: Feature
+      fix: Fix
+    change_type_order:
+    - break
+    - Break
+    - feature
+    - Feature
+    - fix
+    - Fix
+    changelog_pattern: ^((B|b)reak|(F|f)eature|(F|f)ix)?(!)?
+    commit_parser: ^(?P<change_type>(B|b)reak|(F|f)eature|(F|f)ix):\s(?P<message>.*)?
+    example: 'feature: this feature enable customize through config file'
+    info: This is customized info
+    info_path: cz_customize_info.txt
+    message_template: '{{change_type}}:{% if show_message %} {{message}}{% endif %}'
+    questions:
+    - choices:
+      - name: Breaking Change.
+        value: break
+      - name: 'feature: A new feature.'
+        value: feature
+      - name: 'bug fix: A bug fix against an existing feature'
+        value: fix
+      message: Select the type of change you are committing
+      name: change_type
+      type: list
+    - message: Body.
+      name: message
+      type: input
+    - message: Do you want to add body message in commit?
+      name: show_message
+      type: confirm
+    schema: '<type>: <body>'
+    schema_pattern: ((B|b)reak|(F|f)eature|(F|f)ix)(:|\/)(.*)
+  name: cz_customize
+  tag_format: v$version
+  version: 0.30.0

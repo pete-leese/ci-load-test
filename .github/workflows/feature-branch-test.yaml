@@ -1,0 +1,41 @@
+name: CICD-Load-Test-Feature-Branch-Dev
+on:
+  push:
+    branches:
+      - break/*
+      - feature/*
+      - fix/*
+
+env:
+  kind_version: v0.11.1
+  kubectl_version: v1.27.4
+
+jobs:
+  ci_load_test:
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Check if kubectl is already installed
+        run: |
+          if ! command -v kubectl &> /dev/null; then
+            echo "kubectl is not installed. Installing kubectl..."
+            curl -LO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+          else
+            echo "kubectl is already installed."
+          fi
+
+      - name: Checking to see if KinD is already installed
+        run: |
+          if ! command -v kind &> /dev/null; then
+            echo "KinD is not installed. Installing KinD..."
+            curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${{ env.kind_version }}/kind-linux-amd64"
+            chmod +x ./kind
+            sudo mv ./kind /usr/local/bin/kind
+          else
+            echo "KinD is already installed."
+          fi
