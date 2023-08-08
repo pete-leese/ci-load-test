@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,6 +12,7 @@ spec:
     metadata:
       labels:
         app: http-echo-foo
+        metadata: http-echo
     spec:
       containers:
       - name: http-echo
@@ -19,3 +21,32 @@ spec:
         - "-text=foo"
         ports:
         - containerPort: 5678
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-echo-foo
+spec:
+  selector:
+    app: http-echo-foo
+  ports:
+  - port: 5678
+    targetPort: 5678
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: http-echo-foo-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: ImplementationSpecific
+        path: /foo(/|$)(.*)
+        backend:
+          service:
+            name: http-echo-foo
+            port:
+              number: 5678

@@ -52,25 +52,25 @@ jobs:
           yaml_content="kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
           nodes:
-          - role: control-plane
-            kubeadmConfigPatches:
-            - |
-              kind: InitConfiguration
-              nodeRegistration:
-                kubeletExtraArgs:
-                  node-labels: \"ingress-ready=true\"
-            extraPortMappings:
-            - containerPort: 80
-              hostPort: 80
-              protocol: TCP
-            - containerPort: 443
-              hostPort: 443
-              protocol: TCP"
-              for ((i=1; i<=node_count; i++)); do
-                  yaml_content+="\n- role: worker"
-              done
-              echo -e "$yaml_content" > kind-config.yaml
-              echo "YAML file 'kind-config.yaml' has been created with $node_count worker node(s)."
+            - role: control-plane
+              kubeadmConfigPatches:
+              - |
+                kind: InitConfiguration
+                nodeRegistration:
+                  kubeletExtraArgs:
+                    node-labels: \"ingress-ready=true\"
+              extraPortMappings:
+              - containerPort: 80
+                hostPort: 80
+                protocol: TCP
+              - containerPort: 443
+                hostPort: 443
+                protocol: TCP"
+                    for ((i=1; i<=node_count; i++)); do
+                      yaml_content+="\n- role: worker"
+                    done
+                    echo -e "$yaml_content" > kind-config.yaml
+                    echo "YAML file 'kind-config.yaml' has been created with $node_count worker node(s)."
 
       - name: Set up Kubernetes cluster with KinD
         id: create_k8s_cluster
@@ -88,5 +88,13 @@ jobs:
       - name: Deploy http-echo deployments
         run: kubectl apply -f http-echo-bar.yaml && kubectl apply -f http-echo-foo.yaml
 
-      - name: Wait for Ingress and Deployments to be ready
-        run: kubectl wait --for=condition=Ready ingress,deployment --all --timeout=300s
+      - name: Wait for Ingress to be deployed
+        run: |
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=90s
+
+      - name: Wait for http-echo to be deployed
+        run: |
+          kubectl wait --for=condition=ready pod -l metadata=http-echo
