@@ -98,3 +98,27 @@ jobs:
       - name: Wait for http-echo to be deployed
         run: |
           kubectl wait --for=condition=ready pod -l metadata=http-echo
+
+
+      - name: Run load test
+        run: |
+          # Variables
+          HOST="localhost"
+          BAR_PATH="/bar"
+          FOO_PATH="/foo"
+          CONCURRENT_REQUESTS=10
+          TOTAL_REQUESTS=100
+
+          # Function to run load test
+          run_load_test() {
+              local host="$1"
+              local path="$2"
+
+              echo "Running load test for http://${host}${path}"
+              ab -n ${TOTAL_REQUESTS} -c ${CONCURRENT_REQUESTS} "http://${host}${path}"
+              echo "Load test for http://${host}${path} completed."
+          }
+
+          # Start the load testing
+          run_load_test "${HOST}" "${BAR_PATH}"
+          run_load_test "${HOST}" "${FOO_PATH}"
