@@ -104,6 +104,10 @@ jobs:
       - name: Deploy http-echo deployments
         run: kubectl apply -f http-echo-bar.yaml && kubectl apply -f http-echo-foo.yaml
 
+  Health-Checks:
+    runs-on: [self-hosted, macOS]
+    needs: Setup-Environment
+    steps:
       - name: Wait for Ingress to be deployed
         run: |
           kubectl wait --namespace ingress-nginx \
@@ -116,7 +120,7 @@ jobs:
           kubectl wait --for=condition=ready pod -l metadata=http-echo --timeout=90s
 
   Perform-Load-Test:
-    needs: Setup-Environment
+    needs: Health-Checks
     runs-on: [self-hosted, macOS]
     steps:
       - name: Run load test and write output to file
