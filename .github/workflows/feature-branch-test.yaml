@@ -1,4 +1,5 @@
-name: CICD-Load-Test-Feature-Branch-Dev
+name: CI-Load-Test-Feature-Branch-Dev
+
 on:
   push:
     branches:
@@ -7,22 +8,27 @@ on:
       - fix/*
 
 env:
-  kind_version: v0.11.1
-  kubectl_version: v1.27.4
+  kind_version: 0.11.1
+  kubectl_version: 1.27.4
+  ingress_version: 1.8.1
+  cluster_name: ci-load-test
+  node_count: 2
 
 jobs:
   ci_load_test:
     runs-on: [self-hosted, macOS]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
+
       - name: Check if kubectl is already installed
         run: |
           if ! command -v kubectl &> /dev/null; then
             echo "kubectl is not installed. Installing kubectl..."
-            curl -LO "https://dl.k8s.io/release/${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
+            curl -LO "https://dl.k8s.io/release/v${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
             chmod +x kubectl
             sudo mv kubectl /usr/local/bin/
           else
@@ -33,9 +39,41 @@ jobs:
         run: |
           if ! command -v kind &> /dev/null; then
             echo "KinD is not installed. Installing KinD..."
-            curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${{ env.kind_version }}/kind-linux-amd64"
+            curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v${{ env.kind_version }}/kind-linux-amd64"
             chmod +x ./kind
             sudo mv ./kind /usr/local/bin/kind
           else
             echo "KinD is already installed."
           fi
+
+      - name: Dynamically build kind-config.yaml
+        run: |
+          node_count=${{ env.node_count }}
+          yaml_content="kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane"
+                    for ((i=1; i<=node_count; i++)); do
+                        yaml_content+="\n- role: worker"
+                    done
+                    echo -e "$yaml_content" > kind-config.yaml
+                    echo "YAML file 'kind-config.yaml' has been created with $node_count worker node(s)."
+
+      - name: Set up Kubernetes cluster with KinD
+        id: create_k8s_cluster
+        run: |
+          if ! kind get clusters | grep -q ${{ env.cluster_name }}; then
+            echo "Creating KinD cluster..."
+            kind create cluster --name ${{ env.cluster_name }} --config kind-config.yaml
+          else
+            echo "KinD cluster '${{ env.cluster_name }}' already exists."
+          fi
+
+      - name: Install Ingress controller
+        run: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v${{ env.ingress_version }}/deploy/static/provider/kind/deploy.yaml
+
+      - name: Deploy http-echo deployments
+        run: kubectl apply -f http-echo-bar.yaml && kubectl apply -f http-echo-foo.yaml
+
+      - name: Wait for Ingress and Deployments to be ready
+        run: kubectl wait --for=condition=Ready ingress,deployment --all --timeout=300s
