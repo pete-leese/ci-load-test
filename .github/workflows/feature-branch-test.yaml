@@ -1,18 +1,28 @@
 name: CI-Load-Test-Feature-Branch-Dev
 
 on:
-  push:
-    branches:
-      - break/*
-      - feature/*
-      - fix/*
+ pull_request:
+   branches:
+     - main
+   types:
+     - "edited"
+     - "opened"
+     - "ready_for_review"
+     - "reopened"
+     - "synchronize"
 
 env:
-  kind_version: 0.11.1
-  kubectl_version: 1.27.4
-  ingress_version: 1.8.1
-  cluster_name: ci-load-test
-  node_count: 2
+  KIND_VERSION: 0.11.1
+  KUBECTL_VERSION: 1.27.4
+  INGRESS_VERSION: 1.8.1
+  CLUSTER_NAME: ci-load-test
+  NODE_COUNT: 2
+  HOST: localhost
+  BAR_PATH: /bar
+  FOO_PATH: /foo
+  CONCURRENT_REQUESTS: 10
+  TOTAL_REQUESTS: 100
+  OUTPUT_FILE: load_test_results.txt
 
 jobs:
   ci_load_test:
@@ -97,28 +107,23 @@ jobs:
 
       - name: Wait for http-echo to be deployed
         run: |
-          kubectl wait --for=condition=ready pod -l metadata=http-echo
+          kubectl wait --for=condition=ready pod -l metadata=http-echo --timeout=90s
 
-
-      - name: Run load test
+      - name: Run load test and write output to file
         run: |
-          # Variables
-          HOST="localhost"
-          BAR_PATH="/bar"
-          FOO_PATH="/foo"
-          CONCURRENT_REQUESTS=10
-          TOTAL_REQUESTS=100
+          CONCURRENT_REQUESTS=${{ env.concurrent_requests }}
+          TOTAL_REQUESTS=${{ env.total_requests }}
+          OUTPUT_FILE=${{ env.output_file }}
 
-          # Function to run load test
           run_load_test() {
               local host="$1"
               local path="$2"
 
               echo "Running load test for http://${host}${path}"
-              ab -n ${TOTAL_REQUESTS} -c ${CONCURRENT_REQUESTS} "http://${host}${path}"
-              echo "Load test for http://${host}${path} completed."
+              ab -n ${TOTAL_REQUESTS} -c ${CONCURRENT_REQUESTS} "http://${host}${path}" > $OUTPUT_FILE
+              echo "Load test for http://${host}${path} completed. Results written to $OUTPUT_FILE"
           }
 
-          # Start the load testing
-          run_load_test "${HOST}" "${BAR_PATH}"
-          run_load_test "${HOST}" "${FOO_PATH}"
+          # Start the load testing and write output to file
+          run_load_test "${{ env.host }}" "${{ env.bar_path }}"
+          run_load_test "${{ env.host }}" "${{ env.foo_path }}"
