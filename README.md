@@ -1,5 +1,7 @@
 # goodnotes-tech-challenge
 
+[![CI-Load-Test-Main-PR-Event](https://github.com/pete-leese/cicd-load-test/actions/workflows/main-pr-event.yaml/badge.svg?branch=main)](https://github.com/pete-leese/cicd-load-test/actions/workflows/main-pr-event.yaml)
+
 Setting Up CI Load Test Workflow with GitHub Actions
 
 This project aims to establish an automated Continuous Integration (CI) load testing workflow using GitHub Actions, enhancing our development process's efficiency and ensuring the stability of our applications under varying levels of load. The workflow is triggered for each pull request to the default branch, automatically provisioning a multi-node Kubernetes cluster using KinD (Kubernetes in Docker) on the CI runner.
