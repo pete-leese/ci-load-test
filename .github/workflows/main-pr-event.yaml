@@ -148,6 +148,7 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
               const result = fs.readFileSync('${{ env.output_file }}', 'utf8');
+              const fs = require('fs')
               const plan = result.length > 65000 ? result.toString().substring(0, 65000) + " ..." : result;
               const truncated_message = result.length > 65000 ? "Output is too long and was truncated. You can read full results in " + run_link + "<br /><br />" : "";
               const output = `
