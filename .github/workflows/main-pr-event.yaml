@@ -148,7 +148,7 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
               const run_url = process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
-              const run_link = '<a href="' + run_url + '">Actions</a>.'
+              const run_link = '<a href="' + run_url + '"Actions</a>.'
               const fs = require('fs')
               const result = fs.readFileSync('${{ env.output_file }}', 'utf8')
               const plan = result.length > 65000 ? result.toString().substring(0, 65000) + " ..." : result
