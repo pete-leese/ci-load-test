@@ -144,12 +144,12 @@ jobs:
               local path="$2"
 
               echo "Running load test for http://${host}${path}"
-              ab -n ${TOTAL_REQUESTS} -c ${CONCURRENT_REQUESTS} "http://${host}${path}" > ${{ env.output_file }}
+              ab -n ${TOTAL_REQUESTS} -c ${CONCURRENT_REQUESTS} "http://${host}${path}" >> ${{ env.output_file }}
               echo "Load test for http://${host}${path} completed. Results written to ${{ env.output_file }}"
           }
 
-          run_load_test "${{ env.host }}" "${{ env.bar_path }}"
           run_load_test "${{ env.host }}" "${{ env.foo_path }}"
+          run_load_test "${{ env.host }}" "${{ env.bar_path }}"
 
       # Post load testing results as a comment on the pull request
       - name: Post Load Testing Result as Comment on PR
