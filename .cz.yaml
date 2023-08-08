@@ -51,3 +51,4 @@ commitizen:
   name: cz_customize
   tag_format: v$version
   version: 0.0.1
+
