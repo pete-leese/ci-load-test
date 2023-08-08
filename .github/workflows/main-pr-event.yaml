@@ -40,6 +40,7 @@ jobs:
         with:
           fetch-depth: 2
 
+      # Install kubectl if not already installed
       - name: Check if kubectl is already installed
         run: |
           if ! command -v kubectl &> /dev/null; then
@@ -51,6 +52,7 @@ jobs:
             echo "kubectl is already installed."
           fi
 
+      # Install KinD if not already installed
       - name: Checking to see if KinD is already installed
         run: |
           if ! command -v kind &> /dev/null; then
@@ -62,6 +64,7 @@ jobs:
             echo "KinD is already installed."
           fi
 
+      # Create a kind-config.yaml file dynamically based on environment variables
       - name: Dynamically build kind-config.yaml
         run: |
           node_count=${{ env.node_count }}
@@ -88,6 +91,7 @@ jobs:
                     echo -e "$yaml_content" > kind-config.yaml
                     echo "YAML file 'kind-config.yaml' has been created with $node_count worker node(s)."
 
+      # Create a KinD cluster with specified settings if it doesn't exist
       - name: Set up Kubernetes cluster with KinD
         id: create_k8s_cluster
         run: |
@@ -98,16 +102,21 @@ jobs:
             echo "KinD cluster '${{ env.cluster_name }}' already exists."
           fi
 
-      - name: Install Ingress controller
+      # Deploy the Ingress controller for Kubernetes
+      - name: Deploy Ingress controller
         run: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v${{ env.ingress_version }}/deploy/static/provider/kind/deploy.yaml
 
-      - name: Deploy http-echo deployments
+      # Deploy the http-echo application
+      - name: Deploy http-echo pods
         run: kubectl apply -f http-echo-bar.yaml && kubectl apply -f http-echo-foo.yaml
 
+  # Perform health checks on the deployed components
   Health-Checks:
     runs-on: [self-hosted, macOS]
     needs: Setup-Environment
     steps:
+
+      # Wait for Ingress controller pod to be ready
       - name: Wait for Ingress to be deployed
         run: |
           kubectl wait --namespace ingress-nginx \
@@ -115,10 +124,12 @@ jobs:
             --selector=app.kubernetes.io/component=controller \
             --timeout=90s
 
+      # Wait for http-echo pods to be ready
       - name: Wait for http-echo to be deployed
         run: |
           kubectl wait --for=condition=ready pod -l metadata=http-echo --timeout=90s
 
+  # Perform load testing and post results as a comment on the PR
   Perform-Load-Test:
     needs: Health-Checks
     runs-on: [self-hosted, macOS]
@@ -137,10 +148,10 @@ jobs:
               echo "Load test for http://${host}${path} completed. Results written to ${{ env.output_file }}"
           }
 
-          # Start the load testing and write output to file
           run_load_test "${{ env.host }}" "${{ env.bar_path }}"
           run_load_test "${{ env.host }}" "${{ env.foo_path }}"
 
+      # Post load testing results as a comment on the pull request
       - name: Post Load Testing Result as Comment on PR
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'

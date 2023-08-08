@@ -1,6 +1,6 @@
 # goodnotes-tech-challenge
 
-[![CI-Load-Test-Main-PR-Event](https://github.com/pete-leese/cicd-load-test/actions/workflows/main-pr-event.yaml/badge.svg?branch=main)](https://github.com/pete-leese/cicd-load-test/actions/workflows/main-pr-event.yaml)
+[![CI-Load-Test-Main-PR-Event](https://github.com/pete-leese/cicd-load-test/actions/workflows/main-pr-event.yaml/badge.svg)](https://github.com/pete-leese/cicd-load-test/actions/workflows/main-pr-event.yaml)
 
 Setting Up CI Load Test Workflow with GitHub Actions
 
