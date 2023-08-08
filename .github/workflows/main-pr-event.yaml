@@ -1,0 +1,186 @@
+# Define the name of the GitHub Actions workflow
+name: CI-Load-Test-Main-PR-Event
+
+# Trigger the workflow on specific pull request events for the 'main' branch
+on:
+ pull_request:
+   branches:
+     - main
+   types:
+     - "edited"
+     - "opened"
+     - "ready_for_review"
+     - "reopened"
+     - "synchronize"
+
+# Define environment variables used throughout the workflow
+env:
+  # Versions
+  kind_version: 0.11.1
+  kubectl_version: 1.27.4
+  ingress_version: 1.8.1
+  # Cluster settings
+  cluster_name: ci-load-test
+  node_count: 2
+  # HTTP settings
+  host: localhost
+  bar_path: /bar
+  foo_path: /foo
+  # Load testing settings
+  concurrent_requests: 20
+  total_requests: 500
+  output_file: load_test_results.txt
+
+jobs:
+  Setup-Environment:
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      # Install kubectl if not already installed
+      - name: Check if kubectl is already installed
+        run: |
+          if ! command -v kubectl &> /dev/null; then
+            echo "kubectl is not installed. Installing kubectl..."
+            curl -LO "https://dl.k8s.io/release/v${{ env.kubectl_version }}/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+          else
+            echo "kubectl is already installed."
+          fi
+
+      # Install KinD if not already installed
+      - name: Checking to see if KinD is already installed
+        run: |
+          if ! command -v kind &> /dev/null; then
+            echo "KinD is not installed. Installing KinD..."
+            curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v${{ env.kind_version }}/kind-linux-amd64"
+            chmod +x ./kind
+            sudo mv ./kind /usr/local/bin/kind
+          else
+            echo "KinD is already installed."
+          fi
+
+      # Create a kind-config.yaml file dynamically based on environment variables
+      - name: Dynamically build kind-config.yaml
+        run: |
+          node_count=${{ env.node_count }}
+          yaml_content="kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              kubeadmConfigPatches:
+              - |
+                kind: InitConfiguration
+                nodeRegistration:
+                  kubeletExtraArgs:
+                    node-labels: \"ingress-ready=true\"
+              extraPortMappings:
+              - containerPort: 80
+                hostPort: 80
+                protocol: TCP
+              - containerPort: 443
+                hostPort: 443
+                protocol: TCP"
+                    for ((i=1; i<=node_count; i++)); do
+                      yaml_content+="\n- role: worker"
+                    done
+                    echo -e "$yaml_content" > kind-config.yaml
+                    echo "YAML file 'kind-config.yaml' has been created with $node_count worker node(s)."
+
+      # Create a KinD cluster with specified settings if it doesn't exist
+      - name: Set up Kubernetes cluster with KinD
+        id: create_k8s_cluster
+        run: |
+          if ! kind get clusters | grep -q ${{ env.cluster_name }}; then
+            echo "Creating KinD cluster..."
+            kind create cluster --name ${{ env.cluster_name }} --config kind-config.yaml
+          else
+            echo "KinD cluster '${{ env.cluster_name }}' already exists."
+          fi
+
+      # Deploy the Ingress controller for Kubernetes
+      - name: Deploy Ingress controller
+        run: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v${{ env.ingress_version }}/deploy/static/provider/kind/deploy.yaml
+
+      # Deploy the http-echo application
+      - name: Deploy http-echo pods
+        run: kubectl apply -f http-echo-bar.yaml && kubectl apply -f http-echo-foo.yaml
+
+  # Perform health checks on the deployed components
+  Health-Checks:
+    runs-on: [self-hosted, macOS]
+    needs: Setup-Environment
+    steps:
+
+      # Wait for Ingress controller pod to be ready
+      - name: Wait for Ingress to be deployed
+        run: |
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=90s
+
+      # Wait for http-echo pods to be ready
+      - name: Wait for http-echo to be deployed
+        run: |
+          kubectl wait --for=condition=ready pod -l metadata=http-echo --timeout=90s
+
+  # Perform load testing and post results as a comment on the PR
+  Perform-Load-Test:
+    needs: Health-Checks
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Run load test and write output to file
+        run: |
+          CONCURRENT_REQUESTS=${{ env.concurrent_requests }}
+          TOTAL_REQUESTS=${{ env.total_requests }}
+
+          run_load_test() {
+              local host="$1"
+              local path="$2"
+
+              echo "Running load test for http://${host}${path}"
+              ab -n ${TOTAL_REQUESTS} -c ${CONCURRENT_REQUESTS} "http://${host}${path}" >> ${{ env.output_file }}
+              echo "Load test for http://${host}${path} completed. Results written to ${{ env.output_file }}"
+          }
+
+          run_load_test "${{ env.host }}" "${{ env.foo_path }}"
+          run_load_test "${{ env.host }}" "${{ env.bar_path }}"
+
+      # Post load testing results as a comment on the pull request
+      - name: Post Load Testing Result as Comment on PR
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+              const run_url = process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+              const run_link = '<a href="' + run_url + '">Actions</a>.'
+              const fs = require('fs')
+              const results_file = fs.readFileSync('${{ env.output_file }}', 'utf8');
+              const results = results_file.length > 65000 ? results_file.toString().substring(0, 65000) + " ..." : results_file;
+              const truncated_message = results_file.length > 65000 ? "Output is too long and was truncated. You can read full results in " + run_link + "<br /><br />" : "";
+              const output = `
+              #### Load Testing Results for ${{ env.cluster_name }}
+
+              <details><summary>Results</summary>
+              \`\`\`\n
+              Node Count: ${{ env.node_count }}
+              \`\`\`\n
+              ${results}
+              \`\`\`
+
+              </details>
+              ${truncated_message}
+              *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
