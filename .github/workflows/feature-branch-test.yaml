@@ -12,17 +12,17 @@ on:
      - "synchronize"
 
 env:
-  KIND_VERSION: 0.11.1
-  KUBECTL_VERSION: 1.27.4
-  INGRESS_VERSION: 1.8.1
-  CLUSTER_NAME: ci-load-test
-  NODE_COUNT: 2
-  HOST: localhost
-  BAR_PATH: /bar
-  FOO_PATH: /foo
-  CONCURRENT_REQUESTS: 10
-  TOTAL_REQUESTS: 100
-  OUTPUT_FILE: load_test_results.txt
+  kind_version: 0.11.1
+  kubectl_version: 1.27.4
+  ingress_version: 1.8.1
+  cluster_name: ci-load-test
+  node_count: 2
+  host: localhost
+  bar_path: /bar
+  foo_path: /foo
+  concurrent_requests: 20
+  total_requests: 500
+  output_file: load_test_results.txt
 
 jobs:
   ci_load_test:
