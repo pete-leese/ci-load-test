@@ -145,12 +145,31 @@ jobs:
         uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const fs = require('fs');
-            const result = fs.readFileSync('${{ env.output_file }}', 'utf8');
-            github.issues.createComment({
+        script: |
+            const run_url = process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+            const run_link = '<a href="' + run_url + '">Actions</a>.'
+            const fs = require('fs')
+            const result = fs.readFileSync('${{ env.output_file }}', 'utf8')
+            const plan = result.length > 65000 ? result.toString().substring(0, 65000) + " ..." : result
+            const truncated_message = result.length > 65000 ? "Output is too long and was truncated. You can read full results in " + run_link + "<br /><br />" : ""
+            const output = `#### Load Testing Results for ${{ env.cluster_name }}`
+
+            <details><summary>Results</summary>
+            \`\`\`\n
+            Node Count: ${{ env.node_count }}
+            \`\`\`
+
+            \`\`\`\n
+            ${results}
+            \`\`\`
+
+            </details>
+            ${truncated_message}
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Load Testing Result:\n\`\`\`\n${result}\n\`\`\``
+              body: output
             })
