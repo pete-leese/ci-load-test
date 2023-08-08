@@ -123,3 +123,4 @@ By implementing this workflow, you can ensure that your application remains resi
 - 08/08/2023 - 17:30 - Paused Challenge
 - 08/08/2023 - 19:50 - Updated Workflow to change event trigger when PR is created for testing purposes.
 - 08/08/2023 - 20:30 - Created README Documentation
+- 08/08/2023 - 21:40 - MVP created, Finished Challenge
