@@ -147,17 +147,19 @@ jobs:
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-              const result = fs.readFileSync('${{ env.output_file }}', 'utf8');
+              const run_url = process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID
+              const run_link = '<a href="' + run_url + '">Actions</a>.'
               const fs = require('fs')
-              const plan = result.length > 65000 ? result.toString().substring(0, 65000) + " ..." : result;
-              const truncated_message = result.length > 65000 ? "Output is too long and was truncated. You can read full results in " + run_link + "<br /><br />" : "";
+              const results_file = fs.readFileSync('${{ env.output_file }}', 'utf8');
+              const results = results_file.length > 65000 ? results_file.toString().substring(0, 65000) + " ..." : results_file;
+              const truncated_message = results_file.length > 65000 ? "Output is too long and was truncated. You can read full results in " + run_link + "<br /><br />" : "";
               const output = `
               #### Load Testing Results for ${{ env.cluster_name }}
 
               <details><summary>Results</summary>
-              \`\`\`
+              \`\`\`\n
               Node Count: ${{ env.node_count }}
-
+              \`\`\`\n
               ${results}
               \`\`\`
 
