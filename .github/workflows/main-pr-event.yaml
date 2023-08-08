@@ -142,8 +142,9 @@ jobs:
           run_load_test "${{ env.host }}" "${{ env.foo_path }}"
 
       - name: Post Load Testing Result as Comment on PR
-        uses: actions/github-script@v4
+        uses: actions/github-script@v6
         with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const fs = require('fs');
             const result = fs.readFileSync('${{ env.output_file }}', 'utf8');
