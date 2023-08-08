@@ -12,4 +12,6 @@ Time Log:
 08/08/2023 - 13:45 - Resumed Challenge
 08/08/2023 - 14:10 - Reworked kind-conf to support deploy node-lables and required ingress configuration, added ingress service, network resources for foo & bar deployments
 08/08/2023 - 14:30 - Paused Challenge
-8/08/2023 -  17:00 - Added checks to validate ingress and pods are available
+08/08/2023 - 17:00 - Added checks to validate ingress and pods are available
+08/08/2023 - 17:30 - Paused Challenge
+08/08/2023 - 19:50 - Updated Workflow to change event trigger when PR is created for testing purposes.
