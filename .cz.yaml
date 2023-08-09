@@ -50,4 +50,5 @@ commitizen:
     schema_pattern: ((B|b)reak|(F|f)eature|(F|f)ix)(:|\/)(.*)
   name: cz_customize
   tag_format: v$version
-  version: 0.30.0
+  version: 0.0.1
+

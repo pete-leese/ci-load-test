@@ -2,6 +2,9 @@
 
 ### Feature
 
+- Feature/cicd001_mvp_load_testing (#1)
+- Created new feature branch to facilitate example PR request
+- Generated updated changelog
 - Included status badge in readme
 - Generated changelog from Commitizen
 - Included GitHub PR template
@@ -14,6 +17,9 @@
 
 ### Fix
 
+- event trigger
+- Updated readme to indicate challenge complete
+- setting correct operator on loadtest  ouput file, ergo not overwriting the first load test results output
 - Added comments to GitHub Actions workflow
 - script refactor for PR comments
 - Forgot to define fs const
