@@ -88,7 +88,7 @@ jobs:
                     for ((i=1; i<=node_count; i++)); do
                       yaml_content+="\n- role: worker"
                     done
-                    echo -e "$yaml_content" > kind-config.yaml
+                    echo "$yaml_content" > kind-config.yaml
                     echo "YAML file 'kind-config.yaml' has been created with $node_count worker node(s)."
 
       # Create a KinD cluster with specified settings if it doesn't exist
