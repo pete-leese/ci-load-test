@@ -2,12 +2,13 @@
 
 ### Feature
 
+- Feature/cicd001_mvp_load_testing (#1)
+- Created new feature branch to facilitate example PR request
 - Generated updated changelog
 - Included status badge in readme
 - Generated changelog from Commitizen
 - Included GitHub PR template
 - Broke down workflow into seperate jobs & introduced script to upload into PR comment
-- Updated workflow to change event trigger to on pr to facilitate testing inserting result output to PR comments
 - Updated workflow to change event trigger to on pr to facilitate testing inserting result output to PR comments
 - Initial load testing script
 - Added checks to validate ingress and http-echo pods are ready
